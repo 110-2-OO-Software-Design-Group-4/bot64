@@ -1,31 +1,48 @@
 from discord import Message
+from discord.utils import get
 from discord.ext.commands import Cog, Bot
 
 from libs.check import isDMMessage, isSelfMessage
+from libs.embed_provider import provideEmbed
 from libs.message_flag import MessageFlag
 from libs.scanner import scanner
 
 class Scan(Cog):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
+        self.bot_category = None
+        self.bot_channel = None
     
     async def handleSuspiciousMessage(self, message: Message) -> None:
         pass
 
     async def handleMaliciousMessage(self, message: Message) -> None:
         pass
+
+    # TODO: Do we really need dependency on message in order to create channels?
+    async def createBotChannels(self, message: Message) -> None:
+        guild = message.guild
+        self.bot_category = get(guild.categories, name='BOT CHANNELS')
+        if self.bot_category is None:
+            self.bot_category = await guild.create_category('BOT CHANNELS')
+        self.bot_channel = get(guild.text_channels, name='logs', category=self.bot_category)
+        if self.bot_channel is None:
+            self.bot_channel = await guild.create_text_channel('logs', category=self.bot_category)
+
     
     @Cog.listener()
     async def on_message(self, message: Message) -> None:
+        await self.createBotChannels(message=message)
+
         if isSelfMessage(self_id=self.bot.user.id, message=message):
             return None
         elif isDMMessage(message=message):
             return None
         
-        await message.channel.send(content=message.content)
-
         flag = await scanner(message=message)
         print(flag) # debug
+       
+        await self.bot_channel.send(embed=provideEmbed(message=message,flag=flag))
 
         if flag == MessageFlag.Safe:
             pass
