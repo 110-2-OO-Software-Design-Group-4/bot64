@@ -1,9 +1,8 @@
 from discord import Message
 from discord.utils import get
 from discord.ext.commands import Cog, Bot
-
 from libs.check import isDMMessage, isSelfMessage
-from libs.embed_provider import provideEmbed
+from libs.log_message import LogMessage
 from libs.message_flag import MessageFlag
 from libs.scanner import scanner
 
@@ -28,7 +27,6 @@ class Scan(Cog):
         self.bot_channel = get(guild.text_channels, name='logs', category=self.bot_category)
         if self.bot_channel is None:
             self.bot_channel = await guild.create_text_channel('logs', category=self.bot_category)
-
     
     @Cog.listener()
     async def on_message(self, message: Message) -> None:
@@ -42,7 +40,8 @@ class Scan(Cog):
         flag = await scanner(message=message)
         print(flag) # debug
        
-        await self.bot_channel.send(embed=provideEmbed(message=message,flag=flag))
+        logMessage = LogMessage(message=message,flag=flag)
+        await logMessage.sendLogMessage(channel=self.bot_channel)
 
         if flag == MessageFlag.Safe:
             pass
