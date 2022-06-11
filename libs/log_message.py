@@ -23,9 +23,9 @@ class LogMessage():
             if flag == MessageFlag.Safe:
                 return Colour(value=0x6bcb77)
             elif flag == MessageFlag.Suspicious:
-                return Colour(value=0xffd93d)
+                return Colour(value=0xf9d923)
             else:
-                return Colour(value=0xff6b6b)
+                return Colour(value=0xeb5353)
         
         title = provideTitle(flag=flag)
         description = message.content

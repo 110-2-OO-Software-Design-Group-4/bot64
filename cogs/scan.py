@@ -1,7 +1,7 @@
 from discord import Message
 from discord.utils import get
 from discord.ext.commands import Cog, Bot
-from libs.check import isDMMessage, isSelfMessage
+from libs.check import isDMMessage, isSelfMessage, isSpecificChannelMessage
 from libs.log_message import LogMessage
 from libs.message_flag import MessageFlag
 from libs.scanner import scanner
@@ -34,7 +34,9 @@ class Scan(Cog):
 
         if isSelfMessage(self_id=self.bot.user.id, message=message):
             return None
-        elif isDMMessage(message=message):
+        if isDMMessage(message=message):
+            return None
+        if isSpecificChannelMessage(message=message, channel=self.bot_channel):
             return None
         
         flag = await scanner(message=message)

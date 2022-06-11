@@ -9,7 +9,6 @@ startup_extensions = ['scan']
 bot = commands.Bot(command_prefix=command_prefix, description=description)
 BOT_TOKEN = config('BOT_TOKEN')
 
-
 @bot.event
 async def on_ready() -> None:
     print('Logged in as')
