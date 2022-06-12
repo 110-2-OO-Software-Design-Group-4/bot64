@@ -23,9 +23,9 @@ class LogMessage():
             if flag == MessageFlag.Safe:
                 return Colour(value=0x6bcb77)
             elif flag == MessageFlag.Suspicious:
-                return Colour(value=0xffd93d)
+                return Colour(value=0xf9d923)
             else:
-                return Colour(value=0xff6b6b)
+                return Colour(value=0xeb5353)
         
         title = provideTitle(flag=flag)
         description = message.content
@@ -38,6 +38,7 @@ class LogMessage():
         fieldValue = '[Click me]' + '(' + message.jump_url + ')'
 
         embed = Embed(title=title,description=description,color=color,timestamp=timestamp)
-        embed.set_author(name=author.display_name,icon_url=author.avatar_url)
+        embed.set_author(name=author.name + "#" + str(author.discriminator),icon_url=author.avatar_url)
         embed.add_field(name=fieldTitle,value=fieldValue)
+        embed.set_footer(text="Member ID: " + str(author.id))
         return embed
