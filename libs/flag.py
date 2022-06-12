@@ -7,6 +7,6 @@ class MessageFlag(IntEnum):
 
 class PenaltyPolicyFlag(IntEnum):
     Ignore = 1
-    Timeout = 2
+    Mute = 2
     Kick = 3
     Ban = 4

@@ -1,9 +1,12 @@
 from discord import Message
-from typing import Union
 
 from libs.flag import MessageFlag
 
-async def scanner(message: Message) -> MessageFlag:
-    # TODO: scan the message
-    
-    return MessageFlag.Safe
+class Scanner:
+    def __init__(self) -> None:
+        pass
+
+    def scan(self, message: Message) -> MessageFlag:
+        # TODO: scan the message
+        
+        return MessageFlag.Safe
