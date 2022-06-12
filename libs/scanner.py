@@ -1,8 +1,6 @@
+import os, math, string
 from discord import Message
 from typing import Literal
-import os
-import math
-import string
 
 from libs.message_flag import MessageFlag
 def remove_punctuation(token):
