@@ -38,6 +38,7 @@ class LogMessage():
         fieldValue = '[Click me]' + '(' + message.jump_url + ')'
 
         embed = Embed(title=title,description=description,color=color,timestamp=timestamp)
-        embed.set_author(name=author.display_name,icon_url=author.avatar_url)
+        embed.set_author(name=author.name + "#" + str(author.discriminator),icon_url=author.avatar_url)
         embed.add_field(name=fieldTitle,value=fieldValue)
+        embed.set_footer(text="Member ID: " + str(author.id))
         return embed
