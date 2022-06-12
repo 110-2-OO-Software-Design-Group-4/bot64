@@ -1,9 +1,9 @@
 from discord import Message
-from typing import Literal
+from typing import Union
 
-from libs.message_flag import MessageFlag
+from libs.flag import MessageFlag
 
-async def scanner(message: Message) -> Literal[MessageFlag.Safe, MessageFlag.Suspicious, MessageFlag.Malicious]:
+async def scanner(message: Message) -> MessageFlag:
     # TODO: scan the message
     
     return MessageFlag.Safe

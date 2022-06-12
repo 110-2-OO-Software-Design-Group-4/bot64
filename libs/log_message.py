@@ -1,6 +1,6 @@
 from discord import Message, Embed, Colour, TextChannel
 from typing import List
-from libs.message_flag import MessageFlag
+from libs.flag import MessageFlag
 
 class LogMessage():
     def __init__(self, message: Message, flag: MessageFlag) -> None:
