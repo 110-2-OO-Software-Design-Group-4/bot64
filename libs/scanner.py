@@ -17,9 +17,12 @@ class Scanner:
         if l <= r:
             mid = (l+r)//2
             #print(mid, len(sen_links))
-            if sen_links[mid] == substring:
-                return 100000.
-            elif sen_links[mid] > substring:
+            if sen_links[mid] in substring:
+                if len(sen_links[mid]) == substrlen:
+                    return 100000.
+                elif substring[len(sen_links[mid])] in "./":
+                    return 100000.
+            if sen_links[mid] > substring:
                 return self.b_search_link(l, mid-1, substring, sen_links, substrlen)
             elif sen_links[mid] < substring:
                 return self.b_search_link(mid+1, r, substring, sen_links, substrlen)
