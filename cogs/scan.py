@@ -9,6 +9,8 @@ from libs.logger import MessageLogger
 from libs.flag import MessageFlag, PenaltyPolicyFlag
 from libs.scanner import Scanner
 from libs.database import Database
+from libs.emoji import EmojiHelper
+from libs.penalty import PenaltyAction
 class Scan(Cog):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
@@ -18,6 +20,7 @@ class Scan(Cog):
         self.scanner = Scanner()
         self.logger = MessageLogger(bot=self.bot)
         self.utils = Utils(bot=self.bot)
+        self.penalty_action = PenaltyAction(bot=self.bot)
     
     '''Deal with every guild messages'''
 
@@ -28,56 +31,43 @@ class Scan(Cog):
         if Check.is_self_message(self_id=self.bot.user.id, message=message) or Check.is_dm_message(message=message):
             return None
         
-        flag = self.scanner.scan(message=message)
-        print(flag) # debug
-
-        await self.handle_penalty(guild_id=message.guild.id, message=message, message_flag=flag)
-    
-    async def handle_penalty(self, guild_id: str, message: Message, message_flag: MessageFlag) -> None:
+        message_flag = self.scanner.scan(message=message)
+        print(message_flag) # debug
         if message_flag == MessageFlag.Safe:
            return None
         
-        get_policy_func = self.db.get_suspicious_policy if message_flag == MessageFlag.Suspicious else self.db.get_malicious_policy
-        policy = get_policy_func(guild_id=guild_id)
-        log_channel_id = self.db.get_log_channel_id(guild_id=guild_id)
-        guild = await self.bot.fetch_guild(guild_id=guild_id)
-        penalty_reason = f'{message_flag.name} message'
+        await self.penalty_action.handle_penalty(message=message, message_flag=message_flag)
+    
+    '''Administrators can take penalty actions manually'''
 
-        await self.logger.log_flagged_message(channel_id=log_channel_id, message=message, message_flag=message_flag)
-        
-        if policy == PenaltyPolicyFlag.Ignore:
+    @Cog.listener()
+    async def on_raw_reaction_add(self, payload: RawReactionActionEvent) -> None:
+        # Check if the reaction is added in a guild, and not by the bot itself.
+        if payload.event_type != 'REACTION_ADD' or payload.guild_id == None or payload.user_id == self.bot.user.id:
             return None
-        elif policy == PenaltyPolicyFlag.Mute:
-            mute_role_id = self.db.get_mute_role_id(guild_id=guild_id)
-            if mute_role_id == None:
-                await self.logger.log_message(channel_id=log_channel_id, content='Error: mute role has not been set.')
-                return None
-            
-            mute_role = await self.utils.fetch_guild_role(guild=guild, role_id=mute_role_id)
-            if mute_role == None:
-                await self.logger.log_message(channel_id=log_channel_id, content='Error: mute role is invalid.')
-                return None
 
-            applied = await self.utils.apply_role(guild=guild, member_id=message.author.id, role=mute_role)
-            if applied == False:
-                await self.logger.log_message(channel_id=log_channel_id, content='Error: failed to apply the mute role to the user.')
-                return None
-            
-            await self.utils.dm_user(user_id=message.author.id, content=f'You have been muted in the guild `{guild.name}`. Reason: `{penalty_reason}`')
-        elif policy == PenaltyPolicyFlag.Kick:
-            await self.utils.dm_user(user_id=message.author.id, content=f'You have been kicked from the guild `{guild.name}`. Reason: `{penalty_reason}`')
-            kicked = await self.utils.kick_user(guild=guild, user_id=message.author.id, reason=penalty_reason)
-            if kicked == False:
-                await self.logger.log_message(channel_id=log_channel_id, content='Error: failed to kick the user from the guild.')
-                return None
-        elif policy == PenaltyPolicyFlag.Ban:
-            await self.utils.dm_user(user_id=message.author.id, content=f'You have been banned from the guild `{guild.name}`. Reason: `{penalty_reason}`')
-            banned = await self.utils.ban_user(guild=guild, user_id=message.author.id, reason=penalty_reason, delete_message_days=7)
-            if banned == False:
-                await self.logger.log_message(channel_id=log_channel_id, content='Error: failed to ban the user from the guild.')
-                return None
-        else:
-            raise NotImplementedError('Invalid penalty policy')
+        # Get log channel
+        log_channel_id = self.db.get_log_channel_id(guild_id=guild_id)
+        log_channel = None if log_channel_id == None else await self.utils.fetch_text_channel(channel_id=log_channel_id)
+
+        # Trigger action only when the added reaction is in the logs channel AND the message is an embed.
+        if log_channel == None or payload.channel_id != log_channel_id:
+            return None
+        message = await log_channel.fetch_message(payload.message_id)
+        if len(message.embeds) == 0:
+            return None
+
+        # Check if the reaction is added by an administrator.
+        member = self.utils.fetch_guild_member(guild=log_channel.guild, member_id=payload.user_id)
+        if member == None:
+            return None
+        
+        # Check if the reaction maps to a valid penalty action.
+        penalty_action = EmojiHelper.get_penalty_actions(emoji=payload.emoji)
+
+        # TODO: Execute specific action based on the added reaction (emoji).
+        # If you need to get user's id, you can get it from footer. (See log_message.py for detail)
+        print(message.embeds[0].footer.text) #debug
 
     '''Bot commands'''
     
@@ -199,27 +189,6 @@ class Scan(Cog):
         exception = error.original
         print(exception, file=sys.stderr)
         await ctx.send(f'An error occurred:\n```{str(exception)}```')
-    
-    @Cog.listener()
-    async def on_raw_reaction_add(self, payload: RawReactionActionEvent) -> None:
-        guild_id = payload.guild_id # The guild ID where the reaction got added or removed, if applicable.
-        
-        if payload.event_type != 'REACTION_ADD' or guild_id == None:
-            return None
-
-        log_channel_id = self.db.get_log_channel_id(guild_id=guild_id)
-        log_channel = None if log_channel_id == None else await self.utils.fetch_text_channel(channel_id=log_channel_id)
-
-        # Trigger action only when the added reaction is in the logs channel AND the message is an embed.
-        if log_channel == None or payload.channel_id != log_channel_id:
-            return None
-        message = await log_channel.fetch_message(payload.message_id)
-        if len(message.embeds) == 0:
-            return None
-        
-        # TODO: Execute specific action based on the added reaction (emoji).
-        # If you need to get user's id, you can get it from footer. (See log_message.py for detail)
-        print(message.embeds[0].footer.text) #debug
 
 def setup(bot: Bot) -> None:
     bot.add_cog(Scan(bot))
