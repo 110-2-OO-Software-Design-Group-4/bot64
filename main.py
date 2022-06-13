@@ -1,13 +1,15 @@
 import sys, traceback
 from discord.ext import commands
-from decouple import config
+
+from libs.env import Env
+from libs.database import Database
 
 description = 'Bot 64'
 command_prefix = 'bot64!'
 startup_extensions = ['scan']
+database = Database(endpoint=Env.MONGO_URL)
 
 bot = commands.Bot(command_prefix=command_prefix, description=description)
-BOT_TOKEN = config('BOT_TOKEN')
 
 @bot.event
 async def on_ready() -> None:
@@ -38,4 +40,4 @@ async def on_command_error(_, exception: commands.CommandError) -> None:
         print(error_msg, file=sys.stderr)
 
 if __name__ == '__main__':
-    bot.run(BOT_TOKEN)
+    bot.run(Env.BOT_TOKEN)
