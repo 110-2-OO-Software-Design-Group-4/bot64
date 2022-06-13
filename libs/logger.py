@@ -1,3 +1,4 @@
+from re import M
 import sys
 from discord import Message, TextChannel
 from discord.ext.commands import Bot
@@ -20,7 +21,7 @@ class MessageLogger:
         
         await log_channel.send(content=content)
 
-    async def log_flagged_message(self, channel_id: int, message: Message, message_flag: MessageFlag) -> None:
+    async def log_marked_message(self, channel_id: int, message: Message, message_flag: MessageFlag) -> Optional[Message]:
         log_channel = await self.__get_log_channel(channel_id=channel_id)
         if log_channel == None:
             return None
@@ -33,7 +34,8 @@ class MessageLogger:
             author=message.author,
             timestamp=message.created_at)
         
-        await log_channel.send(embed=embed)
+        message = await log_channel.send(embed=embed)
+        return message
 
     async def __get_log_channel(self, channel_id: int) -> Optional[TextChannel]:
         if channel_id == None:
