@@ -1,4 +1,4 @@
-from discord import Message, DMChannel
+from discord import Message, DMChannel, TextChannel
 
 from libs.flag import PenaltyPolicyFlag
 

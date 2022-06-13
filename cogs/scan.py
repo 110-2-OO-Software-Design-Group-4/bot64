@@ -1,5 +1,5 @@
 import sys
-from discord import Message
+from discord import Message, RawReactionActionEvent
 from discord.utils import get
 from discord.ext.commands import Cog, Bot, Context, CommandError, group, guild_only, has_guild_permissions
 
@@ -30,7 +30,6 @@ class Scan(Cog):
         
         flag = self.scanner.scan(message=message)
         print(flag) # debug
-        flag = MessageFlag.Suspicious
 
         await self.handle_penalty(guild_id=message.guild.id, message=message, message_flag=flag)
     
@@ -200,6 +199,27 @@ class Scan(Cog):
         exception = error.original
         print(exception, file=sys.stderr)
         await ctx.send(f'An error occurred:\n```{str(exception)}```')
+    
+    @Cog.listener()
+    async def on_raw_reaction_add(self, payload: RawReactionActionEvent) -> None:
+        guild_id = payload.guild_id # The guild ID where the reaction got added or removed, if applicable.
+        
+        if payload.event_type != 'REACTION_ADD' or guild_id == None:
+            return None
+
+        log_channel_id = self.db.get_log_channel_id(guild_id=guild_id)
+        log_channel = None if log_channel_id == None else await self.utils.fetch_text_channel(channel_id=log_channel_id)
+
+        # Trigger action only when the added reaction is in the logs channel AND the message is an embed.
+        if log_channel == None or payload.channel_id != log_channel_id:
+            return None
+        message = await log_channel.fetch_message(payload.message_id)
+        if len(message.embeds) == 0:
+            return None
+        
+        # TODO: Execute specific action based on the added reaction (emoji).
+        # If you need to get user's id, you can get it from footer. (See log_message.py for detail)
+        print(message.embeds[0].footer.text) #debug
 
 def setup(bot: Bot) -> None:
     bot.add_cog(Scan(bot))
