@@ -15,3 +15,16 @@
     - `Mute`: if the mute role is set, Bot64 would add the role to the discord member.
     - `Kick`: Bot64 kicks the discord member out of the guild. He/She can rejoin the guild at any time.
     - `Ban`: Bot64 bans the discord member. He/She cannot rejoin the guild before unbanned.
+
+## Deployment
+
+- Please provide the following environment variables:
+    - `BOT_TOKEN`: Discord Bot Token. You can create one at [Discord Developer Portal](https://discord.com/developers/applications).
+    - `MONGO_URL`: MongoDB connection URL. (In development stage, we use MongoDB Atlas free tier to test our bot.)
+```
+git clone https://github.com/110-2-OO-Software-Design-Group-4/bot64.git
+cd bot64
+pip install -r requirements.txt
+cp .env.example .env # Please add environment variables in '.env'
+python3 main.py
+```
