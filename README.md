@@ -29,3 +29,9 @@ pip install -r requirements.txt
 cp .env.example .env # Please add environment variables in '.env'
 python3 main.py
 ```
+## Caveats
+
+- You need to invite the discord bot into a guild to make it works!
+- Bot64 needs at least the following permissions: `MANAGE_ROLES`, `KICK_MEMBERS` and `BAN_MEMBERS` to work correctly.
+- If you choose to set the mute role, please make sure Bot64 has a higher role than the mute role. Otherwise, it could not add the mute role to the discord member, due to Discord's default limit.
+- You are responsible for setting the mute role properly. That is, you are supposed to prevent the discord members with the mute role sending messages in any channel.
