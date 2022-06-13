@@ -3,6 +3,7 @@
 ## Members
 
 - B07902108 翁祖毅
+- B07902079 張庭禎
 - B07902002 連崇安
 - （其他人自己加）
 
@@ -36,3 +37,22 @@ python3 main.py
 - Bot64 needs at least the following permissions: `MANAGE_ROLES`, `KICK_MEMBERS` and `BAN_MEMBERS` to work correctly.
 - If you choose to set the mute role, please make sure Bot64 has a higher role than the mute role. Otherwise, it could not add the mute role to the discord member, due to Discord's default limit.
 - You are responsible for setting the mute role properly to deny the discord members with the mute role to send messages in any channel.
+
+## Algorithm of filter
+
+- The input is the message of Discord, which is in `message.content`, after running the filter, the filter function would return one of three Flags: `Safe`, `Suspicious`, `Malicious`.
+- There are two database that contents the sensitive words, phishing links, which were set in the `name.txt`, `link.txt`, respectively, all the data are sorted in advance. 
+- When running the function:
+    - The program would produce multiple substrings of the message content, every substrings starts with number or alphabet (and the former char must not be number or alphabet), there are three kinds of substrings:
+        1. The length of substring is `Max(length of sensitive words in name.txt)` -> To search for multiple-word key
+        2. The substring ends with chars that are not number or alphabet -> To search for single-word key
+        3. The substring ends with space and '\n' -> To search for link
+    - Using the binary-search algorithm, we search all the substrings in `name.txt`, search the third kind of substrings in `link.txt`. The sensitive score increases if the sentive word were found in substring.
+    - The sensitive score is determined by:
+        1. `Sensitive words`: `1 + len(Sensitive words) / 8`
+        2. `Sensitive links`: `100000`
+    - The final score of the message content is given by: `(Sensitive score)/log2(len(message content))`, and return the Flag:
+        1. `Safe`: final score = 0
+        2. `Suspicious`: 0 < final score < 0.5
+        3. `Malicious`: final score >= 0.5
+- Complexity analysis: Set the length of message `L`, the Number of keys in name.txt `N`, the Number of keys in link.txt `M`, the temporal complexity would be `L*log(Max(M, N))`, and the spacial complexity would be `Max(L, N, M)`
