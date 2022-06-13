@@ -5,11 +5,11 @@ from discord.ext.commands import Cog, Bot, Context, CommandError, group, guild_o
 
 from libs.check import Check
 from libs.utils import Utils
-from libs.logger import MessageLogger
 from libs.flag import MessageFlag, PenaltyPolicyFlag
 from libs.scanner import Scanner
 from libs.database import Database
 from libs.emoji import EmojiHelper
+from libs.logger import MessageLogger
 from libs.penalty import PenaltyAction
 class Scan(Cog):
     def __init__(self, bot: Bot) -> None:
@@ -18,8 +18,8 @@ class Scan(Cog):
         self.bot_channel = None
         self.db = Database()
         self.scanner = Scanner()
-        self.logger = MessageLogger(bot=self.bot)
         self.utils = Utils(bot=self.bot)
+        self.logger = MessageLogger(bot=self.bot)
         self.penalty_action = PenaltyAction(bot=self.bot)
     
     '''Deal with every guild messages'''
@@ -47,27 +47,36 @@ class Scan(Cog):
             return None
 
         # Get log channel
-        log_channel_id = self.db.get_log_channel_id(guild_id=guild_id)
+        log_channel_id = self.db.get_log_channel_id(guild_id=payload.guild_id)
         log_channel = None if log_channel_id == None else await self.utils.fetch_text_channel(channel_id=log_channel_id)
 
         # Trigger action only when the added reaction is in the logs channel AND the message is an embed.
         if log_channel == None or payload.channel_id != log_channel_id:
             return None
-        message = await log_channel.fetch_message(payload.message_id)
-        if len(message.embeds) == 0:
+        log_message = await log_channel.fetch_message(payload.message_id)
+        if len(log_message.embeds) == 0:
             return None
 
         # Check if the reaction is added by an administrator.
-        member = self.utils.fetch_guild_member(guild=log_channel.guild, member_id=payload.user_id)
-        if member == None:
+        admin = await self.utils.fetch_guild_member(guild=log_channel.guild, member_id=payload.user_id)
+        if admin == None or not admin.permissions_in(channel=log_channel).administrator:
             return None
         
         # Check if the reaction maps to a valid penalty action.
         penalty_action = EmojiHelper.get_penalty_actions(emoji=payload.emoji)
-
-        # TODO: Execute specific action based on the added reaction (emoji).
-        # If you need to get user's id, you can get it from footer. (See log_message.py for detail)
-        print(message.embeds[0].footer.text) #debug
+        if penalty_action == None:
+            return None
+        
+        try:
+            member_id = log_message.embeds[0].footer.text.split(' ')[1]
+            reason = 'Execute by admin'
+            penalty_func = self.penalty_action.get_penalty_func(policy=penalty_action)
+            await penalty_func(guild=log_channel.guild, member_id=member_id, log_channel_id=log_channel_id, reason=reason)
+        except:
+           await self.logger.log_message(channel_id=log_channel_id, content='Error: failed to take the penalty action.')
+        
+        await EmojiHelper.remove_penalty_actions(message=log_message, member=self.bot.user)
+        await log_message.add_reaction('👌')
 
     '''Bot commands'''
     

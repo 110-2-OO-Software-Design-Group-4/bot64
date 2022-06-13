@@ -1,3 +1,4 @@
+from typing import Any
 from discord import Guild, Message
 from discord.ext.commands import Bot
 
@@ -14,6 +15,17 @@ class PenaltyAction:
         self.logger = MessageLogger(bot=self.bot)
         self.utils = Utils(bot=self.bot)
     
+    def get_penalty_func(self, policy: PenaltyPolicyFlag) -> Any:
+        penalty_func_map = {
+            PenaltyPolicyFlag.Ignore: self.ignore,
+            PenaltyPolicyFlag.Mute: self.mute,
+            PenaltyPolicyFlag.Kick: self.kick,
+            PenaltyPolicyFlag.Ban: self.ban
+        }
+        if policy not in penalty_func_map:
+            raise NotImplementedError('Invalid penalty policy')
+        return penalty_func_map[policy]
+    
     async def handle_penalty(self, message: Message, message_flag: MessageFlag):
         guild_id = message.guild.id
         guild = await self.bot.fetch_guild(guild_id=guild_id)
@@ -28,18 +40,8 @@ class PenaltyAction:
         
         get_policy_func = self.db.get_suspicious_policy if message_flag == MessageFlag.Suspicious else self.db.get_malicious_policy
         policy = get_policy_func(guild_id=guild_id)
-
-        penalty_func_map = {
-            PenaltyPolicyFlag.Ignore: self.ignore,
-            PenaltyPolicyFlag.Mute: self.mute,
-            PenaltyPolicyFlag.Kick: self.kick,
-            PenaltyPolicyFlag.Ban: self.ban
-        }
         
-        if policy not in penalty_func_map:
-            raise NotImplementedError('Invalid penalty policy')
-        
-        await penalty_func_map[policy](guild=guild, member_id=member_id, log_channel_id=log_channel_id, reason=reason)
+        await self.get_penalty_func(policy=policy)(guild=guild, member_id=member_id, log_channel_id=log_channel_id, reason=reason)
     
     async def ignore(self, *_) -> None:
         pass
@@ -61,6 +63,7 @@ class PenaltyAction:
             return None
         
         await self.utils.dm_user(user_id=member_id, content=f'You have been muted in the guild `{guild.name}`. Reason: `{reason}`')
+        await self.logger.log_message(channel_id=log_channel_id, content='Successfully apply the mute role to the user.')
     
     async def kick(self, guild: Guild, member_id: int, log_channel_id: int, reason: str) -> None:
         await self.utils.dm_user(user_id=member_id, content=f'You have been kicked from the guild `{guild.name}`. Reason: `{reason}`')
@@ -68,6 +71,7 @@ class PenaltyAction:
         if kicked == False:
             await self.logger.log_message(channel_id=log_channel_id, content='Error: failed to kick the user from the guild.')
             return None
+        await self.logger.log_message(channel_id=log_channel_id, content='Successfully kicked the user from the guild.')
 
     async def ban(self, guild: Guild, member_id: int, log_channel_id: int, reason: str) -> None:
         await self.utils.dm_user(user_id=member_id, content=f'You have been banned from the guild `{guild.name}`. Reason: `{reason}`')
@@ -75,3 +79,4 @@ class PenaltyAction:
         if banned == False:
             await self.logger.log_message(channel_id=log_channel_id, content='Error: failed to ban the user from the guild.')
             return None
+        await self.logger.log_message(channel_id=log_channel_id, content='Successfully banned the user from the guild.')
