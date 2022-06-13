@@ -21,7 +21,8 @@
 - Please provide the following environment variables:
     - `BOT_TOKEN`: Discord Bot Token. You can create one at [Discord Developer Portal](https://discord.com/developers/applications).
     - `MONGO_URL`: MongoDB connection URL. (In development stage, we use MongoDB Atlas free tier to test our bot.)
-```
+- Run the following commands in your terminal:
+```sh
 git clone https://github.com/110-2-OO-Software-Design-Group-4/bot64.git
 cd bot64
 pip install -r requirements.txt
