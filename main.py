@@ -4,7 +4,7 @@ from decouple import config
 
 description = 'Bot 64'
 command_prefix = 'bot64!'
-startup_extensions = ['scan']
+startup_extensions = ['scan', 'routine']
 
 bot = commands.Bot(command_prefix=command_prefix, description=description)
 BOT_TOKEN = config('BOT_TOKEN')
