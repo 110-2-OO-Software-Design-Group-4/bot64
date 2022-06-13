@@ -6,7 +6,7 @@ from libs.database import Database
 
 description = 'Bot 64'
 command_prefix = 'bot64!'
-startup_extensions = ['scan']
+startup_extensions = ['scan', 'routine']
 database = Database(endpoint=Env.MONGO_URL)
 
 bot = commands.Bot(command_prefix=command_prefix, description=description)
