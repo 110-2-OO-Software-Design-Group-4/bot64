@@ -1,8 +1,6 @@
 import requests
 import os
 
-# clean ..\list.txt before running program
-
 class Phishing:
     tiananmenSquareList = []
 

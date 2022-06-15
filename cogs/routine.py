@@ -1,7 +1,6 @@
-from asyncio import tasks
-from Phishing.bot64.libs.phishing import Phishing
 from discord.ext.commands import Cog, Bot
 from discord.ext import tasks
+
 from libs.phishing import Phishing
 
 class Routine(Cog):
